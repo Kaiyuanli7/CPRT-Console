@@ -1,0 +1,12 @@
+SEC: company releases
+  PGR: checking 14 recent releases
+  RBA: checking 6 recent releases
+  CPRT: checking 6 recent releases
+  95 release snippets, 11 Progressive months parsed
+SEC: full-text search
+  full-text "total loss frequency": 10 filings
+  full-text "salvage" "Copart": 16 filings
+  full-text "automotive pricing incentives": 1 filings
+  full-text "total loss" "salvage vendor": 0 filings
+SEC: DOJ disclosure tracker
+  DOJ disclosure: wording changed in 10-Q 2024-11-26, 10-K 2025-09-26, 10-Q 2025-11-24, 10-Q 2026-05-29 across 8 filings

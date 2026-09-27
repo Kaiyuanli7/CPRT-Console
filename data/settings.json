@@ -1,0 +1,167 @@
+{
+  "user_name": "Kaiyuan Li",
+  "user_email": "li.kaiyua@northeastern.edu",
+  "schedule_weekday": 1,
+  "schedule_hour": 8,
+  "schedule_minute": 0,
+  "capture_in_weekly": true,
+  "scan_daily": true,
+  "start_urls": {
+    "copart": "https://www.copart.com/",
+    "iaa": "https://www.iaai.com/"
+  },
+  "show_browser": true,
+  "page_wait_seconds": 10,
+  "scrolls_per_page": 4,
+  "pause_between_pages": [
+    15,
+    30
+  ],
+  "max_pages_per_run": 30,
+  "respect_robots_txt": false,
+  "guided_max_minutes": 30,
+  "learn_sources_min_lots": 10,
+  "field_overrides": {},
+  "carrier_overrides": {},
+  "tracked_carriers": [
+    "State Farm",
+    "Progressive",
+    "GEICO",
+    "Allstate",
+    "USAA"
+  ],
+  "benchmarks": {
+    "Progressive": [
+      0.05,
+      "Ex-GEICO SVP call (9/3/26): Progressive now ~95/5 IAA/Copart"
+    ],
+    "GEICO": [
+      0.95,
+      "Ex-GEICO SVP call (9/3/26): GEICO now ~95/5 Copart/IAA"
+    ]
+  },
+  "min_sample": 10,
+  "market_benchmark": [
+    0.579,
+    "JPM's autoAstat tracker (Sep 11, 2026)"
+  ],
+  "news_queries": [
+    "Copart market share IAA",
+    "Copart insurance volumes",
+    "\"RB Global\" automotive volumes IAA",
+    "Copart \"web scraping\" OR \"web-scraping\"",
+    "Yipit Copart OR \"RB Global\"",
+    "autoAstat salvage",
+    "\"total loss frequency\"",
+    "Progressive \"policies in force\"",
+    "GEICO policy growth",
+    "Copart ACV Auctions acquisition",
+    "Copart \"CCC Intelligent Solutions\"",
+    "Copart Pickles Australia",
+    "salvage auction insurer contract Copart IAA"
+  ],
+  "news_lookback_days": 180,
+  "alt_data_terms": [
+    "market share",
+    "share",
+    "data",
+    "tracking",
+    "tracker",
+    "scrap",
+    "survey",
+    "index",
+    "units",
+    "volume",
+    "assignments",
+    "total loss",
+    "policies in force",
+    "policy count",
+    "contract",
+    "rfp",
+    "take rate",
+    "fee",
+    "yipit",
+    "autoastat",
+    "web traffic",
+    "channel check"
+  ],
+  "extra_feeds": [
+    {
+      "name": "Repairer Driven News",
+      "url": "https://www.repairerdrivennews.com/feed/",
+      "keywords": [
+        "copart",
+        "iaa",
+        "salvage",
+        "total loss",
+        "ccc",
+        "acv"
+      ]
+    }
+  ],
+  "fred_series": {
+    "insurance_cpi": [
+      "BLS:CUUR0000SETE",
+      "Motor vehicle insurance prices"
+    ],
+    "repair_cpi": [
+      "CUSR0000SETD",
+      "Motor vehicle maintenance & repair prices"
+    ],
+    "parts_cpi": [
+      "CUSR0000SETC",
+      "Motor vehicle parts & equipment prices"
+    ],
+    "used_car_cpi": [
+      "CUSR0000SETA02",
+      "Used car & truck prices"
+    ],
+    "vmt_12m": [
+      "M12MTVUSM227NFWA",
+      "Vehicle miles traveled, 12-month total"
+    ]
+  },
+  "sec_release_targets": [
+    {
+      "ticker": "PGR",
+      "filings": 14,
+      "keywords": [
+        "policies in force",
+        "combined ratio",
+        "net premiums written"
+      ]
+    },
+    {
+      "ticker": "RBA",
+      "filings": 6,
+      "keywords": [
+        "automotive",
+        "unit volume",
+        "lots sold",
+        "take rate",
+        "gross transaction value"
+      ]
+    },
+    {
+      "ticker": "CPRT",
+      "filings": 6,
+      "keywords": [
+        "insurance",
+        "units",
+        "assignments",
+        "average selling price"
+      ]
+    }
+  ],
+  "sec_fulltext_queries": [
+    "\"total loss frequency\"",
+    "\"salvage\" \"Copart\"",
+    "\"automotive pricing incentives\"",
+    "\"total loss\" \"salvage vendor\""
+  ],
+  "sec_fulltext_forms": "10-K,10-Q,8-K",
+  "sec_fulltext_start": "2025-01-01",
+  "doj_ticker": "CPRT",
+  "doj_filings": 8,
+  "doj_keyword": "money laundering"
+}

@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% from "_macros.html" import run_badge %}
+{% block title %}How to use{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>How to use the console</h1>
+    <p class="lede">What the console does, what every number means, and what to do when something goes wrong.</p>
+  </div>
+</header>
+
+<section class="panel" id="setup">
+  <h2>Your setup</h2>
+  <table class="data">
+    <thead><tr><th>Step</th><th>Status</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>Your name and email (the SEC requires them)</td>
+        <td>{% if configured %}<span class="badge ok">Done</span>{% else %}<span class="badge warn">Not yet</span>{% endif %}</td>
+        <td>{% if not configured %}<a href="/settings#profile">Add them in Settings</a>{% endif %}</td></tr>
+      <tr><td>Auto-update: the Copart scan daily, everything else weekly</td>
+        <td>{% if schedule.installed %}<span class="badge ok">On</span> <span class="small muted">{{ schedule.when }}</span>{% else %}<span class="badge warn">Off</span>{% endif %}</td>
+        <td>{% if not schedule.installed %}<a href="/settings#schedule">Turn it on in Settings</a>{% endif %}</td></tr>
+      <tr><td>Notifications</td>
+        <td><span class="badge">Check once</span></td>
+        <td><a href="/settings#schedule">Send a test notification</a> from Settings</td></tr>
+      <tr><td>Latest Copart scan</td>
+        <td>{{ run_badge(runs.scan) }} {% if runs.scan %}<span class="small muted">{{ runs.scan.finished|when }}</span>{% endif %}</td>
+        <td><a href="/inventory">Copart inventory</a></td></tr>
+      <tr><td>Latest full update</td>
+        <td>{{ run_badge(runs.weekly) }} {% if runs.weekly %}<span class="small muted">{{ runs.weekly.finished|when }}</span>{% endif %}</td>
+        <td><button class="btn btn-small" data-job="weekly">Run it now</button></td></tr>
+    </tbody>
+  </table>
+  <p class="help">Once the first two steps are done, everything else happens by itself.</p>
+</section>
+
+<nav class="panel" aria-label="On this page">
+  <h2>On this page</h2>
+  <ul class="toc">
+    <li><a href="#overview">What the console does</a></li>
+    <li><a href="#routine">Your routine</a></li>
+    <li><a href="#screen">Reading the screen</a></li>
+    <li><a href="#page-home">This week</a></li>
+    <li><a href="#page-inventory">Copart inventory</a></li>
+    <li><a href="#page-tracker">Insurer tracker</a></li>
+    <li><a href="#page-macro">Macro</a></li>
+    <li><a href="#page-filings">Filings</a></li>
+    <li><a href="#page-news">News</a></li>
+    <li><a href="#page-reports">Reports</a></li>
+    <li><a href="#page-settings">Settings and Guide</a></li>
+    <li><a href="#trace">Tracing a number to its source</a></li>
+    <li><a href="#limits">What the data can't tell you</a></li>
+    <li><a href="#troubleshooting">When something goes wrong</a></li>
+    <li><a href="#behind">Behind the scenes</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+  </ul>
+</nav>
+
+<section class="panel prose" id="overview">
+  <h2>What the console does</h2>
+  <p>The console is a small website that runs only on this Mac. It collects public data about Copart and its market, keeps
+     every week of history in one database, compares each week with the one before and writes short notes about what
+     changed. Nothing is sent anywhere except the requests it makes to collect data.</p>
+  <table class="data">
+    <thead><tr><th>Source</th><th>What the console takes</th><th>How often</th></tr></thead>
+    <tbody>
+      <tr><td>Copart's search pages</td><td>Lots listed at every Copart location, and lots added in the last 7 days</td><td>Every day</td></tr>
+      <tr><td>FRED and the BLS</td><td>Price indexes for repairs, parts, used cars and auto insurance, and miles driven</td><td>Weekly</td></tr>
+      <tr><td>SEC EDGAR</td><td>Progressive's monthly results, release excerpts, Copart's DOJ paragraph and full-text search hits</td><td>Weekly</td></tr>
+      <tr><td>Google News and trade press</td><td>Headlines about Copart, IAA, salvage and alternative data</td><td>Weekly</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:14px">With auto-update on, the Copart scan runs every day and the full update once a week, at the day
+     and time set in Settings{% if schedule.installed %} ({{ schedule.when }}){% endif %}. The schedule runs even when the
+     console's window is closed, as long as the Mac is on; if the Mac is asleep, the task runs when it wakes. You get a
+     notification after each full update, and whenever Copart blocks a scan.</p>
+</section>
+
+<section class="panel prose" id="routine">
+  <h2>Your routine</h2>
+  <table class="data">
+    <thead><tr><th>When</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>Any day</td><td>Nothing. If a notification says Copart blocked the scan, fill in that day with
+        <strong>Scan with me</strong> on Copart inventory, or wait for the next scan.</td></tr>
+      <tr><td>After the weekly notification</td><td>Open <a href="/">This week</a> and read the notes from the top. Act on
+        anything marked <strong>Needs attention</strong> or <strong>To do</strong>, then check that everything under
+        <strong>Data freshness</strong> says OK.</td></tr>
+      <tr><td>Before a deadline</td><td>On <a href="/reports">Reports</a>, download the Excel workbook and the charts. Check
+        each number you plan to use against its source; see <a href="#trace">tracing a number</a>.</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:14px">To open the console, double-click <strong>Open CPRT Console.command</strong> and leave the
+     Terminal window it opens. Closing that window stops the website but not the schedule.</p>
+</section>
+
+<section class="panel prose" id="screen">
+  <h2>Reading the screen</h2>
+  <h3>The task banner</h3>
+  <p>Whenever a task runs, a banner at the top of every page shows its name, what it's doing and a moving bar.
+     <strong>Details</strong> opens the task's log: every step it took, such as "Step 4 of 6: Copart scan". When a task
+     finishes, the page reloads with the new data. If it fails, the banner says it didn't finish, and the last lines under
+     Details say why. <strong>Stop recording</strong> ends a recorded session and saves it; <strong>Dismiss</strong> hides
+     the banner.</p>
+  <h3>Notes</h3>
+  <p>The notes on This week are written by the console each time the page opens. They come in four kinds, most important first:</p>
+  <ul class="notes">
+    <li class="alert"><span class="tag">Needs attention</span>A real change or a problem, such as a significant move or new DOJ wording.</li>
+    <li class="action"><span class="tag">To do</span>Something only you can do, such as running a scan that's overdue.</li>
+    <li class="good"><span class="tag">Supports the long</span>Data consistent with the thesis, such as cooling insurance prices.</li>
+    <li class="info"><span class="tag">Note</span>Context worth knowing, such as the latest Copart totals.</li>
+  </ul>
+  <h3>Status badges</h3>
+  <p><span class="badge ok">OK</span> it worked. <span class="badge warn">Failed</span> it didn't; hover the badge to see
+     why. <span class="badge warn">Skipped</span> it was left out, usually because a setting is missing.
+     <span class="badge">Not run yet</span> it hasn't happened yet.</p>
+  <h3>Tables, filters and buttons</h3>
+  <ul>
+    <li>Click a column heading to sort a table, and click it again to reverse the order. Type in a filter box to narrow the rows.</li>
+    <li>The dark button at the top right of a page is its main action. Buttons that start a task show the banner while they work.</li>
+    <li>"Download" links save a file, such as a PNG chart for your slides.</li>
+    <li>Colors always mean the same thing: blue is Copart, red is IAA, amber needs attention and green supports the long.</li>
+  </ul>
+</section>
+
+<section class="panel prose" id="page-home">
+  <h2>This week</h2>
+  <p>The summary page, and the place to start. From the top:</p>
+  <dl class="defs">
+    <dt>Copart inventory</dt><dd>The latest scan's totals. Each figure is explained under <a href="#page-inventory">Copart inventory</a>.</dd>
+    <dt>Copart by state</dt><dd>The biggest states by lots listed. When a site shows sellers again, the insurer split takes this place.</dd>
+    <dt>This week's notes</dt><dd>Everything that changed or needs you, in one list. If you read one thing, read this.</dd>
+    <dt>Signals</dt><dd>Four numbers behind the thesis: total-loss pressure, auto insurance prices, Progressive's direct-auto
+      growth and the DOJ disclosure. They're explained under <a href="#page-macro">Macro</a> and <a href="#page-filings">Filings</a>.</dd>
+    <dt>Data freshness</dt><dd>When each source last updated and whether it worked. <strong>Update</strong> refreshes one
+      source now; <strong>Run weekly update</strong> at the top runs everything, in about three minutes.</dd>
+  </dl>
+</section>
+
+<section class="panel prose" id="page-inventory">
+  <h2>Copart inventory</h2>
+  <p>The console's own Copart data. Copart's search pages show counts for the whole site next to the lots they list, and
+     the daily scan saves those counts for every location.</p>
+  <dl class="defs">
+    <dt>Listed in US yards</dt>
+    <dd>Every lot for sale at Copart's US locations, from every kind of seller: insurers, dealers, rental fleets and charities.
+      {% if cop.has_data and cop.us_listed is not none %}<p class="help">Right now: {{ cop.us_listed|num }} (scan of {{ cop.date|nicedate }}).</p>{% endif %}</dd>
+    <dt>Added in the last 7 days</dt>
+    <dd>Copart's own "newly added" filter: lots assigned to a sale in the last 7 days that are still listed. It's the closest
+      thing to weekly new assignments, so it's the number to watch.
+      {% if cop.has_data and cop.us_new_7d is not none %}<p class="help">Right now: {{ cop.us_new_7d|num }}.</p>{% endif %}</dd>
+    <dt>Added yesterday</dt>
+    <dd>The previous full day, across every Copart location. Weekends are low, so compare the 7-day figure instead.
+      {% if cop.has_data and cop.new_24h is not none %}<p class="help">Right now: {{ cop.new_24h|num }}.</p>{% endif %}</dd>
+    <dt>US locations counted</dt>
+    <dd>Copart's list of locations includes offsite lots as well as yards, so this runs higher than its count of yards.</dd>
+    <dt>Changes on a week earlier</dt>
+    <dd>These appear once there's a scan 5 to 9 days earlier. The page always names the scan it compared with, so you can
+      see which two 7-day windows are being compared.
+      {% if cop.prior_date %}<p class="help">Right now: compared with the scan of {{ cop.prior_date|nicedate }}.</p>{% endif %}</dd>
+    <dt>By state</dt>
+    <dd>Each state's lots listed, lots added in the last 7 days, added as a share of listed (how fast its inventory turns
+      over) and the change on a week earlier.</dd>
+    <dt>Charts</dt>
+    <dd>These appear from the second scan. <strong>Download chart</strong> saves a PNG for slides.</dd>
+    <dt>Scan Copart now, and Scan with me</dt>
+    <dd><strong>Scan Copart now</strong> runs the automatic scan straight away: two pages, about a minute. If Copart shows
+      the automated browser a bot check, the console stops for the day rather than getting around it. <strong>Scan with
+      me</strong> then opens a Copart window for you: in the filters on the left, open <strong>Newly added lots</strong> and
+      choose <strong>Last 7 days</strong>, wait for the results, then close the window. The console saves the same counts.</dd>
+  </dl>
+  <p>Reading tip: one week is noise, so look for a trend over several. A storm or a holiday can move one state for reasons
+     that have nothing to do with market share.</p>
+</section>
+
+<section class="panel prose" id="page-tracker">
+  <h2>Insurer tracker</h2>
+  <p>Built to measure what share of each insurer's salvage is listed on Copart rather than IAA. It's <strong>paused</strong>:
+     Copart shows the seller on about 1 lot in 20 to logged-out visitors, and IAA's pages carry no lot data the console can
+     read, so the split can't be measured from public pages. The page says so at the top and keeps its tables for reference.</p>
+  <dl class="defs">
+    <dt>Results</dt><dd>The split by insurer and by state, with 95% intervals. Don't cite it while it's paused.</dd>
+    <dt>Collect data</dt><dd>Record a browsing session, capture the saved pages now, or add a lot by hand.</dd>
+    <dt>Saved pages</dt><dd>Search pages replayed in the weekly update. Turn one off to skip it.</dd>
+    <dt>Data quality</dt><dd>How many lots show a seller, and one-click fixes for sellers that weren't matched to an insurer.</dd>
+    <dt>All lots</dt><dd>Every lot sighting, with filters and a CSV download.</dd>
+  </dl>
+</section>
+
+<section class="panel prose" id="page-macro">
+  <h2>Macro</h2>
+  <p>Public price and traffic data that drives how many damaged cars become salvage.</p>
+  <dl class="defs">
+    <dt>Total-loss pressure</dt>
+    <dd>Repair prices divided by used-car prices, with 2019 = 100. Above 100, repairs have become more expensive relative
+      to what cars are worth, so more damaged cars are written off as total losses.
+      {% if m.pressure_repair %}<p class="help">Right now: {{ m.pressure_repair.value|num }}{% if m.pressure_repair.year_ago %}, against {{ m.pressure_repair.year_ago|num }} a year earlier{% endif %}.</p>{% endif %}</dd>
+    <dt>Repair vs used-car prices</dt>
+    <dd>Each one's change on a year ago. When repairs rise faster than car values, the index above climbs.</dd>
+    <dt>Auto insurance prices</dt>
+    <dd>Change on a year ago. Premium spikes led some drivers to drop collision coverage, so fewer wrecks reached insurers;
+      cooling premiums are the case for that coming back.
+      {% if m.insurance_cpi_yoy %}<p class="help">Right now: {{ m.insurance_cpi_yoy.value|signed(1) }}% on a year ago, after a peak of {{ (m.insurance_cpi_peak or 0)|signed(1) }}%.</p>{% endif %}</dd>
+    <dt>Miles driven</dt>
+    <dd>The 12-month total against a year earlier. More driving means more accidents.
+      {% if m.vmt_12m_yoy %}<p class="help">Right now: {{ m.vmt_12m_yoy.value|signed(1) }}%.</p>{% endif %}</dd>
+  </dl>
+  <p>Each chart has a download link for slides, and the sources are listed at the bottom of the page.</p>
+</section>
+
+<section class="panel prose" id="page-filings">
+  <h2>Filings</h2>
+  <dl class="defs">
+    <dt>Progressive monthly results</dt>
+    <dd>Policies in force by channel, in thousands, with growth on a year ago, and the combined ratio against the year
+      before. A combined ratio under 100 means an underwriting profit. Progressive is IAA's biggest customer, so its growth
+      matters. Every row links to its filing.
+      {% if pgr_first and pgr_last %}<p class="help">Right now: direct-auto growth went from {{ pgr_first.direct_auto_growth|signed(0) }}% ({{ pgr_first.period or pgr_first.filing_date }}) to {{ pgr_last.direct_auto_growth|signed(0) }}% ({{ pgr_last.period or pgr_last.filing_date }}).</p>{% endif %}</dd>
+    <dt>DOJ disclosure tracker</dt>
+    <dd>Copart's paragraph about the Department of Justice investigation, compared with the previous filing of the same
+      type: 10-Q with 10-Q, 10-K with 10-K. Dates, numbers and punctuation are ignored, so a flagged change is a real change
+      in wording. In a changed row, removed words are struck through and new words are highlighted.
+      {% if doj.known %}<p class="help">Right now: the latest {{ doj.latest_form }} ({{ doj.latest|nicedate }}) is {{ 'changed' if doj.changed_latest else 'unchanged' }}{% if doj.last_change %}; the last change was in the filing of {{ doj.last_change|nicedate }}{% endif %}.</p>{% endif %}</dd>
+    <dt>Company releases</dt>
+    <dd>Passages around your keywords in Progressive, RB Global and Copart releases, with the numbers nearby. Filter by
+      company or keyword.</dd>
+    <dt>Full-text search hits</dt>
+    <dd>Every SEC filing that mentions your search phrases. Change the phrases in Settings.</dd>
+  </dl>
+  <p>These numbers are read automatically. Open the filing and check any number before it goes in the pitch.</p>
+</section>
+
+<section class="panel prose" id="page-news">
+  <h2>News</h2>
+  <p>Articles from Google News and a trade feed, for the searches in Settings. The <strong>score</strong> counts the
+     alternative-data terms in each headline and summary ("market share", "volume", "tracker" and so on), so the highest
+     scores are the articles most likely to cite data. The views show what's new this week, unread or starred.
+     <strong>Star</strong> keeps an article and <strong>Mark read</strong> clears it. The console keeps headlines and links
+     only, so read and cite the article itself.</p>
+</section>
+
+<section class="panel prose" id="page-reports">
+  <h2>Reports</h2>
+  <dl class="defs">
+    <dt>Weekly reports</dt>
+    <dd>One per week, built by every full update: the notes, Copart inventory, the macro charts, Progressive and the week's
+      news. Open one and press Cmd+P to save it as a PDF. <strong>Build this week's report</strong> rebuilds it from the data
+      already saved.</dd>
+    <dt>Excel workbook</dt>
+    <dd>Everything in one file for your model:</dd>
+  </dl>
+  <table class="data" style="margin-top:8px">
+    <thead><tr><th>Sheet</th><th>What's in it</th></tr></thead>
+    <tbody>
+      <tr><td>Read me</td><td>What the sheets mean</td></tr>
+      <tr><td>Copart by state (latest)</td><td>Lots listed and added by state, from the latest scan</td></tr>
+      <tr><td>Copart scans by day</td><td>US lots listed and added, one row per scan</td></tr>
+      <tr><td>Copart scan counts</td><td>Every count with its source page and capture time</td></tr>
+      <tr><td>Macro</td><td>Every macro series and the derived columns, by month</td></tr>
+      <tr><td>Progressive monthly</td><td>The parsed monthly results, with filing links</td></tr>
+      <tr><td>DOJ disclosures</td><td>Each filing's passage, its similarity to the previous one and the change flag</td></tr>
+      <tr><td>News, SEC full-text hits, Release snippets</td><td>Everything on the News and Filings pages</td></tr>
+      <tr><td>Insurer split, By state, Weekly history, New lot flow, All lots</td><td>Lot-level data from the paused tracker, when there is some</td></tr>
+    </tbody>
+  </table>
+  <dl class="defs" style="margin-top:14px">
+    <dt>Charts for slides</dt><dd>PNG files. A link that shows "Not Found" needs more data first.</dd>
+    <dt>Raw data</dt><dd>Every lot sighting as a CSV file.</dd>
+  </dl>
+</section>
+
+<section class="panel prose" id="page-settings">
+  <h2>Settings and Guide</h2>
+  <dl class="defs">
+    <dt>Your details</dt><dd>Your name and email, which the SEC requires on automated requests. They stay on this Mac.</dd>
+    <dt>Auto-update</dt><dd>On or off, the time, the day of the full update, the daily Copart scan and whether to replay
+      saved pages. <strong>Send a test notification</strong> checks that macOS lets the console notify you.</dd>
+    <dt>What to track</dt><dd>Which insurers appear, the expert-call claims to test (such as "GEICO 95%") and the smallest
+      sample worth showing.</dd>
+    <dt>Copart and IAA collection</dt><dd>The visible browser, robots.txt checks, the pause between pages and page limits.
+      The defaults are deliberately slow.</dd>
+    <dt>News and SEC searches</dt><dd>One search per line.</dd>
+    <dt>Advanced</dt><dd>Field overrides, and <strong>Delete listing data</strong>, which removes lot sightings and weekly
+      snapshots but keeps everything else.</dd>
+    <dt>Guide</dt><dd>The <a href="/guide">Guide</a> explains the method, the caveats to mention in Q&amp;A and the ground
+      rules. Read it before the pitch.</dd>
+  </dl>
+  <p>Changes apply from the next task.</p>
+</section>
+
+<section class="panel prose" id="trace">
+  <h2>Tracing a number to its source</h2>
+  <p>Judges will ask how you got each number. Every one traces back:</p>
+  <table class="data">
+    <thead><tr><th>Number</th><th>Where to check it</th></tr></thead>
+    <tbody>
+      <tr><td>Copart lots listed and added</td><td>The Excel sheet <strong>Copart scan counts</strong>: each count, the page
+        it came from and when. The raw responses are in the data folder under <code>raw/</code>, in files named
+        <code>…copart_scan…json.gz</code>.</td></tr>
+      <tr><td>Macro series</td><td>The Excel <strong>Macro</strong> sheet has the values.{% if S.fred_series is mapping %} The series:
+        {% for role, entry in S.fred_series.items() if entry is sequence and entry is not string and entry|length == 2 %}{{ entry[1] }} ({{ entry[0]|replace('BLS:', 'BLS ') }}){{ '; ' if not loop.last else '.' }}{% endfor %}
+        Plain ids are FRED series.{% endif %}</td></tr>
+      <tr><td>Progressive figures</td><td>The <strong>Filing</strong> link on each row of the Filings table.</td></tr>
+      <tr><td>DOJ wording</td><td>Each row of the DOJ tracker links to its 10-Q or 10-K.</td></tr>
+      <tr><td>News</td><td>The article link.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel prose" id="limits">
+  <h2>What the data can't tell you</h2>
+  <ul>
+    <li>Copart's counts cover every kind of seller, not only insurers, because Copart hides sellers from logged-out visitors.</li>
+    <li>"Added in the last 7 days" leaves out lots that sold within the week. It's a consistent weekly measure, not a count
+        of every arrival.</li>
+    <li>Copart's locations include offsite lots, so location counts run higher than yard counts.</li>
+    <li>There's no IAA data. Comparisons between Copart and IAA have to come from RB Global's filings or broker figures you
+        cite, such as the JPM tracker.</li>
+    <li>The insurer split is paused until a site shows sellers.</li>
+    <li>Numbers read from filings are best effort, so check them against the filing.</li>
+  </ul>
+</section>
+
+<section class="panel prose" id="troubleshooting">
+  <h2>When something goes wrong</h2>
+  <table class="data">
+    <thead><tr><th>You see</th><th>What it means</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>The banner says a task didn't finish</td><td>The task stopped with an error.</td>
+        <td>Open <strong>Details</strong>; the last lines say why. If it isn't clear, copy them and ask for help.</td></tr>
+      <tr><td>"Copart showed a bot check"</td><td>Copart's protection blocked the automated browser.</td>
+        <td>Nothing to fix. The scan runs again at the next scheduled time, and <strong>Scan with me</strong> fills in that day.</td></tr>
+      <tr><td>A <span class="badge warn">Failed</span> badge under Data freshness</td><td>That source failed last time.</td>
+        <td>Hover the badge for the reason, then press <strong>Update</strong> on that row.</td></tr>
+      <tr><td>SEC filings say <span class="badge warn">Skipped</span></td><td>Your name or email is missing.</td>
+        <td>Add them in <a href="/settings#profile">Settings</a>.</td></tr>
+      <tr><td>The browser says it can't connect</td><td>The console's Terminal window was closed.</td>
+        <td>Double-click <strong>Open CPRT Console.command</strong>.</td></tr>
+      <tr><td>Auto-update never runs</td><td>The Mac was off, or the folder moved.</td>
+        <td>Keep the folder out of Downloads, Desktop and Documents, then turn auto-update off and on again in Settings.</td></tr>
+      <tr><td>No notifications appear</td><td>macOS is blocking them.</td>
+        <td>In System Settings, open Notifications and allow Script Editor.</td></tr>
+      <tr><td>A chart link says "Not Found"</td><td>There isn't enough data for that chart yet.</td>
+        <td>Wait for more scans or updates.</td></tr>
+      <tr><td>A page says "Internal Server Error"</td><td>A bug in the console.</td>
+        <td>Restart the console. If it happens again, copy the last lines of its Terminal window and ask for help.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel prose" id="behind">
+  <h2>Behind the scenes</h2>
+  <ul>
+    <li>The Terminal window runs the website at 127.0.0.1:5055, an address only this Mac can open.</li>
+    <li>Each task runs as its own background program, one at a time, and saves a log in the data folder under <code>jobs/</code>.</li>
+    <li>Auto-update is a macOS scheduled task (launchd). It runs the same tasks as the buttons, without the website.</li>
+    <li>Copart pages are loaded by a normal, logged-out Chromium browser with images turned off, with
+        {{ S.pause_between_pages[0] }} to {{ S.pause_between_pages[1] }} seconds between pages.</li>
+  </ul>
+  <p>Everything lives in the data folder, <code>{{ config_data_dir }}</code>. Copy that folder to back it up.</p>
+  <table class="data">
+    <thead><tr><th>In the data folder</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td><code>console.db</code></td><td>All history, in one SQLite database</td></tr>
+      <tr><td><code>raw/</code></td><td>Every captured response, compressed: the audit trail</td></tr>
+      <tr><td><code>reports/</code></td><td>The weekly reports</td></tr>
+      <tr><td><code>jobs/</code></td><td>A status file and a log for every task</td></tr>
+      <tr><td><code>backups/</code></td><td>Copies made before any data was deleted</td></tr>
+      <tr><td><code>settings.json</code></td><td>Your settings</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel prose" id="glossary">
+  <h2>Glossary</h2>
+  <dl class="defs">
+    <dt>Assignment</dt><dd>An insurer sending a totaled car to an auction platform.</dd>
+    <dt>Lot, or stock number</dt><dd>The platform's ID for one vehicle. Copart says lot; IAA says stock number.</dd>
+    <dt>Listed inventory</dt><dd>Lots currently for sale.</dd>
+    <dt>Total-loss frequency (TLF)</dt><dd>The share of claims where the car is written off rather than repaired.</dd>
+    <dt>Policies in force (PIF)</dt><dd>An insurer's active policies.</dd>
+    <dt>Combined ratio (CR)</dt><dd>An insurer's claims and expenses as a share of premiums. Under 100 means an underwriting profit.</dd>
+    <dt>Split</dt><dd>Copart's share of one insurer's listed lots: Copart lots divided by Copart plus IAA lots.</dd>
+    <dt>Paired states</dt><dd>States sampled on both sites in the same week. Only these count in the split.</dd>
+    <dt>Confidence interval</dt><dd>The range a share could plausibly fall in, given the sample size. The console shows 95% intervals.</dd>
+    <dt>Take rate, or revenue per unit</dt><dd>A platform's fees as a share of vehicle prices, or per vehicle sold.</dd>
+    <dt>ACV</dt><dd>Two meanings: actual cash value (a car's value before the accident), or ACV Auctions, which Copart agreed to buy.</dd>
+    <dt>IAA and RB Global</dt><dd>Insurance Auto Auctions, Copart's main rival, owned by RB Global (ticker RBA).</dd>
+    <dt>autoAstat and Yipit</dt><dd>Paid data providers the sell-side cites for Copart and IAA volumes.</dd>
+    <dt>robots.txt</dt><dd>A file where a website asks automated tools to stay out of some pages.</dd>
+    <dt>Bot check</dt><dd>A page a site shows instead of its content when it suspects an automated visitor. Copart and IAA use Imperva for this.</dd>
+  </dl>
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}News{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>News</h1>
+    <p class="lede">Articles about salvage, insurers and the deals, ranked by how much alt-data language they contain. Updated {{ last|when if last else 'never' }}.</p>
+  </div>
+  <button class="btn btn-primary" data-job="news">Update news</button>
+</header>
+
+<nav class="tabs" aria-label="Article views">
+  {% for key, label in [("all", "All"), ("new", "New this week"), ("unread", "Unread"), ("starred", "Starred")] %}
+    <a href="/news?view={{ key }}&min={{ f.min }}&q={{ f.q|urlencode }}" class="{{ 'active' if f.view == key }}">{{ label }} <span class="count">{{ counts[key] }}</span></a>
+  {% endfor %}
+</nav>
+<form class="toolbar" method="get">
+  <input type="hidden" name="view" value="{{ f.view }}">
+  <input type="search" name="q" value="{{ f.q }}" placeholder="Search headlines" aria-label="Search headlines" style="width:260px">
+  <label for="min">Minimum score</label>
+  <select id="min" name="min" data-autosubmit>{% for n in ["0", "1", "2", "3", "4"] %}<option {{ 'selected' if f.min == n }}>{{ n }}</option>{% endfor %}</select>
+  <button class="btn btn-small">Search</button>
+</form>
+
+<section class="panel">
+  {% if rows %}
+  <ul class="articles">
+    {% for a in rows %}
+    <li class="{{ 'is-read' if a.read }}">
+      <div class="score" title="Alt-data terms matched">{{ a.score }}<small>score</small></div>
+      <div>
+        <h3>{% if a.first_seen >= week %}<span class="new-dot" title="New this week"></span>{% endif %}<a href="{{ a.link }}" target="_blank" rel="noopener">{{ a.title }}</a></h3>
+        <div class="meta"><span>{{ a.source }}</span><span>{{ a.published|nicedate }}</span>{% if a.matched %}<span>Matched: {{ a.matched }}</span>{% endif %}</div>
+      </div>
+      <div class="article-actions">
+        <form method="post" action="/news/{{ a.key }}/{{ 'unstar' if a.starred else 'star' }}" class="inline"><button class="btn btn-small">{{ 'Unstar' if a.starred else 'Star' }}</button></form>
+        <form method="post" action="/news/{{ a.key }}/{{ 'unread' if a.read else 'read' }}" class="inline"><button class="btn btn-small btn-quiet">{{ 'Mark unread' if a.read else 'Mark read' }}</button></form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif counts.all %}
+    <p class="muted">No articles match these filters.</p>
+  {% else %}
+    <div class="empty"><h2>No articles yet</h2><p>Run a news update. It searches Google News and trade press for the topics in Settings.</p>
+      <div class="btn-row"><button class="btn btn-primary" data-job="news">Update news</button></div></div>
+  {% endif %}
+</section>
+<p class="help">Headlines and links only. Read and cite the articles themselves. Change the searches in <a href="/settings#news">Settings</a>.</p>
+{% endblock %}

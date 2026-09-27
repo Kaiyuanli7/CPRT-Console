@@ -1,0 +1,51 @@
+Opening https://www.copart.com/ - browse normally, then close the window when you're done.
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 0 lots (0 with seller names) from 0 pages
+Recording: 20 lots (0 with seller names) from 1 pages
+Recording: 20 lots (0 with seller names) from 1 pages
+Recording: 20 lots (0 with seller names) from 1 pages
+Recording: 20 lots (0 with seller names) from 1 pages
+Recording: 20 lots (0 with seller names) from 1 pages
+Recording: 20 lots (0 with seller names) from 1 pages
+Traceback (most recent call last):
+  File "/Users/kaiyuanli/projects/cprt-console/cli.py", line 70, in main
+    result = capture.run_guided(s, args.platform, args.url, jobs.stop_file(job_id), progress)
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/capture.py", line 297, in run_guided
+    payloads = record_session(start_url, settings["guided_max_minutes"], stop_file, on_payload,
+                              settings["show_browser"] if show_browser is None else show_browser, script)
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/capture.py", line 216, in record_session
+    drain()
+    ~~~~~^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/capture.py", line 211, in drain
+    on_payload(item)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/capture.py", line 287, in on_payload
+    for r in extract([item], platform, overrides):
+             ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/capture.py", line 89, in extract
+    for _, lst, mapping in lot_lists(p["data"], field_overrides):
+                           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/capture.py", line 52, in lot_lists
+    mapping, _ = infer.infer_mapping(lst, field_overrides)
+                 ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/infer.py", line 175, in infer_mapping
+    prof = profile(records)
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/infer.py", line 136, in profile
+    "year": _mean(_is_year(v) for v in vals),
+            ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/infer.py", line 104, in _mean
+    flags = list(flags)
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/infer.py", line 136, in <genexpr>
+    "year": _mean(_is_year(v) for v in vals),
+                  ~~~~~~~~^^^
+  File "/Users/kaiyuanli/projects/cprt-console/cprt/infer.py", line 79, in _is_year
+    return 1950 <= int(float(str(v))) <= 2030 and re.fullmatch(r"\d{4}(\.0)?", str(v).strip()) is not None
+                   ~~~^^^^^^^^^^^^^^^
+OverflowError: cannot convert float infinity to integer
+Failed: cannot convert float infinity to integer

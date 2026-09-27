@@ -1,0 +1,34 @@
+{% macro splitbar(rec, claim=none, big=false, ref=none) -%}
+{% if rec and rec.n and rec.share is not none %}
+<div class="split{% if big %} split-big{% endif %}" role="img"
+     aria-label="Copart {{ rec.share|pct }}, IAA {{ (1 - rec.share)|pct }}, {{ rec.n }} lots{% if claim is not none %}; expert-call claim {{ claim|pct }}{% endif %}">
+  <div class="split-track">
+    <span class="split-copart" style="width: {{ '%.2f'|format(rec.share * 100) }}%"></span>
+    {% if rec.lo is not none %}<span class="split-ci" style="left: {{ '%.2f'|format(rec.lo * 100) }}%; width: {{ '%.2f'|format((rec.hi - rec.lo) * 100) }}%"></span>{% endif %}
+    {% if claim is not none %}<span class="split-claim" style="left: {{ '%.2f'|format(claim * 100) }}%" title="Expert-call claim: {{ claim|pct }}"></span>{% endif %}
+    {% if ref %}<span class="split-ref" style="left: {{ '%.2f'|format(ref[0] * 100) }}%" title="{{ ref[1] }}: {{ ref[0]|pct(1) }}"></span>{% endif %}
+  </div>
+</div>
+{% else %}<div class="split split-none">No lots yet</div>{% endif %}
+{%- endmacro %}
+
+{% macro level_tag(level) -%}
+{{ {"alert": "Needs attention", "action": "To do", "good": "Supports the long", "info": "Note"}[level] }}
+{%- endmacro %}
+
+{% macro run_badge(run) -%}
+{% if not run %}<span class="badge">Not run yet</span>
+{% elif run.status == 'ok' %}<span class="badge ok">OK</span>
+{% elif run.status == 'skipped' %}<span class="badge warn" title="{{ run.message }}">Skipped</span>
+{% elif run.status == 'partial' %}<span class="badge warn">Partly done</span>
+{% else %}<span class="badge warn" title="{{ run.message }}">Failed</span>{% endif %}
+{%- endmacro %}
+
+{% macro legend(show_claim=true, show_ref=false) -%}
+<div class="legend">
+  <span><i class="key copart"></i>Copart</span><span><i class="key iaa"></i>IAA</span>
+  <span>White whisker: 95% interval</span>
+  {% if show_claim %}<span><i class="key claim"></i>Expert-call claim</span>{% endif %}
+  {% if show_ref %}<span>Dashed line: JPM tracker</span>{% endif %}
+</div>
+{%- endmacro %}

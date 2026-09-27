@@ -1,0 +1,34 @@
+Step 1 of 6: News
+News: 146 articles checked, 0 new.
+Step 2 of 6: Macro data (FRED and BLS)
+  Motor vehicle insurance prices: 114 months, latest 2026-08-01
+  Motor vehicle maintenance & repair prices: 715 months, latest 2026-08-01
+  Motor vehicle parts & equipment prices: 427 months, latest 2026-08-01
+  Used car & truck prices: 884 months, latest 2026-08-01
+  Vehicle miles traveled, 12-month total: 668 months, latest 2026-07-01
+Step 3 of 6: SEC filings
+SEC: company releases
+  PGR: checking 14 recent releases
+  RBA: checking 6 recent releases
+  CPRT: checking 6 recent releases
+  95 release snippets, 11 Progressive months parsed
+SEC: full-text search
+  full-text "total loss frequency": 10 filings
+  full-text "salvage" "Copart": 16 filings
+  full-text "automotive pricing incentives": 1 filings
+  full-text "total loss" "salvage vendor": 0 filings
+SEC: DOJ disclosure tracker
+  DOJ disclosure: wording changed in 10-Q 2025-11-24, 10-Q 2026-03-03 across 8 filings
+Step 4 of 6: Copart scan
+Copart scan: all listed lots (1 of 2)
+  428,280 lots across 380 yards
+Copart scan: lots added in the last 7 days (2 of 2)
+  52,932 lots across 214 yards
+Step 5 of 6: Saved Copart & IAA pages
+Capturing copart [GA] (1 of 2)
+  20 lots (12 with seller names)
+Capturing copart [FL] (2 of 2)
+  20 lots (19 with seller names)
+Automatic capture finished: 40 lots from 2 pages.
+Step 6 of 6: Analysis & report
+Weekly update finished: report saved as CPRT_weekly_2026-09-21.html.

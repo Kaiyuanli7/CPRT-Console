@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Guide{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div><h1>Guide</h1><p class="lede">The method behind the numbers, the caveats to mention in Q&amp;A, and the ground rules.</p></div>
+</header>
+
+<div class="panel prose">
+  <h2 style="margin-top:0">About this guide</h2>
+  <p>This page is for explaining the data to judges. For using the console day to day, what each page shows and what to do
+     when something goes wrong, see <a href="/help">How to use</a>.</p>
+
+  <h2 id="scan">How the Copart scan works</h2>
+  <p>Copart's search pages show counts for the whole site next to the lots they list: how many lots each yard has and how
+     many were added in the last 24 hours and 7 days. The scan opens two public pages in a normal, logged-out browser:
+     all lots, and lots added in the last 7 days. It saves those counts and the raw responses. Adding up the yards gives
+     each state's listed inventory and new-lot flow, and comparing scans a week apart gives the trend.</p>
+  <p>Say this in Q&amp;A: the counts cover every kind of seller, because Copart hides sellers from logged-out visitors.
+     "Added in the last 7 days" is Copart's own filter. It counts lots assigned to a sale in the last 7 days that are still
+     listed, so lots that sold within the week are missing. Treat it as a consistent weekly proxy for new assignments, not
+     a count of every arrival.</p>
+  <p>If Copart shows the automated browser a bot check, the scan stops for the day and tells you. It never tries to get
+     around the check. To fill a gap, use <strong>Scan with me</strong> on Copart inventory: you open one filter in a Copart
+     window and the console saves the same counts.</p>
+
+  <h2 id="tracker">How the insurer tracker collects data</h2>
+  <p><strong>Recorded sessions.</strong> "Record on Copart" (or IAA) opens a browser window. Browse like a normal visitor:
+     search one state, open a few pages of results, move to the next state, then close the window. The console keeps the
+     listing data your browser received, works out which field holds the lot number, seller, state and vehicle, and saves
+     every lot. Each results page with enough lots is added to your saved pages.</p>
+  <p><strong>Automatic capture.</strong> The weekly update revisits your saved pages at a slow, human pace. If a site shows a
+     bot check, the console stops for that site until next week rather than trying to get around it. Record a new session
+     whenever you want to add states or refresh pages.</p>
+  <p><strong>By hand.</strong> For anything the recorder can't reach, paste a listing's text on Collect data. The form fills
+     itself; check it and save.</p>
+
+  <h2 id="split">What the split means</h2>
+  <p><strong>Paused for now.</strong> In September 2026 Copart showed the seller on about 1 lot in 20 to logged-out
+     visitors, IAA's pages carried no lot data the console can read, and IAA's robots.txt asks automated tools to stay out
+     of its search. The split can't be measured from public pages, so it stays hidden until a site shows sellers. The
+     Copart scan measures volumes instead.</p>
+  <p>For each insurer, the split is the share of its listed salvage lots that are on Copart rather than IAA. It only counts
+     states sampled on both sites that week, because a state sampled on one site only would skew it. The white whisker is a
+     95% confidence interval: with 40 lots, a 55% share could plausibly be anywhere from about 40% to 69%. A week-over-week
+     change is marked significant only when it's unlikely to be sampling noise.</p>
+  <p>Say this in Q&amp;A: the split measures <em>listed inventory</em>, not contract terms or assignment counts. It's
+     directional evidence that tests the expert-call claims (Progressive about 95% IAA, GEICO about 95% Copart) and shows whether
+     share loss is spreading beyond Progressive. State Farm, the largest insurer, is the one to watch.</p>
+
+  <h2>Signals</h2>
+  <ul>
+    <li><strong>Total-loss pressure</strong>: repair prices divided by used-car prices, 2019 = 100. Rising means more wrecks get totaled.</li>
+    <li><strong>Auto insurance prices</strong>: cooling premiums support the argument that drivers restore coverage.</li>
+    <li><strong>Progressive policy growth</strong>: IAA's biggest customer. Slower growth eases the headwind on Copart.</li>
+    <li><strong>DOJ disclosure</strong>: any real change in the wording of Copart's anti-money-laundering disclosure.</li>
+  </ul>
+
+  <h2>Ground rules</h2>
+  <ul>
+    <li>Copart's and IAA's terms of service likely restrict automated access. Read them and decide as a team. Keep volumes
+        small (the defaults do), stay logged out, and use the data for your own research only.</li>
+    <li>The console never solves CAPTCHAs, rotates identities or disguises itself. When a site shows a bot check, it stops
+        for the day and tells you. It checks robots.txt unless you turn that off in Settings; Copart's robots.txt allows
+        the pages the scan uses.</li>
+    <li>Check your competition's rules on public information and AI use. Describe how you collected the data, and disclose
+        that this tooling was built with AI assistance if the rules ask. The analysis and conclusions are yours.</li>
+    <li>Headlines and filing excerpts are for finding sources. Read and cite the originals.</li>
+  </ul>
+
+  <h2>If something goes wrong</h2>
+  <p>See <a href="/help#troubleshooting">When something goes wrong</a> on How to use.</p>
+</div>
+{% endblock %}

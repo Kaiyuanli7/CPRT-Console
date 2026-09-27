@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Filings{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Filings</h1>
+    <p class="lede">Numbers and wording pulled from SEC filings. Updated {{ last|when if last else 'never' }}.</p>
+  </div>
+  <button class="btn btn-primary" data-job="sec">Update filings</button>
+</header>
+
+{% if not configured %}
+  <div class="flash error">Add your name and email in <a href="/settings#profile">Settings</a> first. The SEC requires them for automated requests.</div>
+{% endif %}
+
+<section class="panel">
+  <div class="section-head"><h2>Progressive monthly results</h2>{% if pgr_svg %}<a href="/charts/progressive.png">Download chart</a>{% endif %}</div>
+  <p>Progressive is IAA's biggest customer and the fastest-growing big insurer. Slowing policy growth eases the headwind on Copart.</p>
+  {% if pgr %}
+    {% if pgr_svg %}<figure class="chart">{{ pgr_svg|safe }}</figure>{% endif %}
+    <div class="table-scroll">
+    <table class="data">
+      <thead><tr><th>Month</th><th class="num">Direct auto policies (000s)</th><th class="num">Growth</th><th class="num">Agency auto (000s)</th><th class="num">Growth</th><th class="num">Combined ratio</th><th class="num">Year before</th><th>Source</th></tr></thead>
+      <tbody>
+      {% for r in pgr %}
+        <tr><td>{{ r.period or r.filing_date|nicedate }}</td>
+          <td class="num">{{ r.direct_auto_pif|num(1) }}</td><td class="num">{% if r.direct_auto_growth is not none %}{{ (r.direct_auto_growth)|signed(0) }}%{% endif %}</td>
+          <td class="num">{{ r.agency_auto_pif|num(1) }}</td><td class="num">{% if r.agency_auto_growth is not none %}{{ (r.agency_auto_growth)|signed(0) }}%{% endif %}</td>
+          <td class="num">{{ r.combined_ratio|num(1) }}</td><td class="num">{{ r.combined_ratio_prior|num(1) }}</td>
+          <td><a href="{{ r.url }}" target="_blank" rel="noopener">Filing</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="help">Read automatically from each monthly release. A combined ratio under 100 means underwriting profit. Check any number against the filing before it goes in the pitch.</p>
+  {% else %}<p class="muted">No monthly releases read yet. Run Update filings.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>DOJ disclosure tracker</h2>
+  <p>Copart has disclosed a DOJ anti-money-laundering investigation since 2023. This compares the paragraph in each 10-Q
+     with the previous 10-Q, and each 10-K with the previous 10-K, ignoring routine date updates. A change could signal
+     escalation or a resolution.</p>
+  {% if doj %}
+    <table class="data">
+      <thead><tr><th>Filed</th><th>Form</th><th>Wording</th><th class="num">Similarity to prior</th><th></th></tr></thead>
+      <tbody>
+      {% for r in doj %}
+        <tr><td>{{ r.filing_date|nicedate }}</td><td>{{ r.form }}</td>
+          <td>{% if not r.found %}<span class="badge">Not found</span>{% elif r.changed %}<span class="badge warn">Changed</span>{% elif r.changed is none %}<span class="badge">First on record</span>{% else %}<span class="badge ok">Unchanged</span>{% endif %}</td>
+          <td class="num">{{ r.similarity|pct if r.similarity is not none else '' }}</td>
+          <td class="num"><a href="{{ r.url }}" target="_blank" rel="noopener">Filing</a></td></tr>
+        {% if r.diff %}<tr><td colspan="5"><p class="small muted" style="margin:0 0 6px">What changed (removed text struck through, new text highlighted):</p><div class="diff">{{ r.diff|safe }}</div></td></tr>{% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if doj[0].disclosure %}<details style="margin-top:12px"><summary>Latest disclosure text</summary><p class="snippet">{{ doj[0].disclosure }}</p></details>{% endif %}
+  {% else %}<p class="muted">Not checked yet. Run Update filings.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Company releases</h2>
+  <form class="toolbar" method="get">
+    <select name="ticker" aria-label="Company" data-autosubmit><option value="">All companies</option>{% for t in tickers %}<option {{ 'selected' if t == ticker }}>{{ t }}</option>{% endfor %}</select>
+    <select name="keyword" aria-label="Keyword" data-autosubmit><option value="">All keywords</option>{% for k in keywords %}<option {{ 'selected' if k == keyword }}>{{ k }}</option>{% endfor %}</select>
+  </form>
+  {% if snips %}
+    {% for s in snips %}
+      <div style="margin-bottom:16px">
+        <div class="meta"><strong>{{ s.ticker }}</strong><span>{{ s.filing_date|nicedate }}</span><span>Keyword: {{ s.keyword }}</span>{% if s.numbers %}<span>Numbers nearby: {{ s.numbers }}</span>{% endif %}<a href="{{ s.url }}" target="_blank" rel="noopener">Filing</a></div>
+        <p class="snippet">{{ s.snippet }}</p>
+      </div>
+    {% endfor %}
+  {% else %}<p class="muted">No release excerpts yet.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>Full-text search hits</h2>
+  <p>Every SEC filing that mentions your search phrases. Change the phrases in <a href="/settings#sec">Settings</a>.</p>
+  {% if hits %}
+    <input type="search" placeholder="Filter by company or phrase" data-filter="#hits" aria-label="Filter filings" style="max-width:320px">
+    <div class="table-scroll" style="margin-top:10px">
+    <table class="data sortable" id="hits">
+      <thead><tr><th>Filed</th><th>Company</th><th>Form</th><th>Phrase</th><th></th></tr></thead>
+      <tbody>{% for h in hits %}<tr><td>{{ h.filing_date }}</td><td class="wrap">{{ h.company }}</td><td>{{ h.form }}</td><td>{{ h.query }}</td><td class="num"><a href="{{ h.url }}" target="_blank" rel="noopener">Open</a></td></tr>{% endfor %}</tbody>
+    </table>
+    </div>
+  {% else %}<p class="muted">No search results yet.</p>{% endif %}
+</section>
+{% endblock %}

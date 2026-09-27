@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} | CPRT console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span>CPRT console</a>
+    <ul>
+      {% for url, label in nav %}
+      {% set active = request.path == url or (url != '/' and request.path.startswith(url)) %}
+      <li><a href="{{ url }}" class="{{ 'active' if active }}" {% if active %}aria-current="page"{% endif %}>{{ label }}</a></li>
+      {% endfor %}
+    </ul>
+    <div class="rail-foot">
+      {% if schedule.installed %}
+        <p>Auto-update is <strong>on</strong>: {{ schedule.when }}.</p>
+      {% elif schedule.supported %}
+        <p>Auto-update is off. <a href="/settings#schedule" style="color:#fff">Turn it on</a></p>
+      {% else %}
+        <p>Auto-update is available on macOS.</p>
+      {% endif %}
+      <button class="btn" data-job="weekly">Update now</button>
+    </div>
+  </nav>
+  <main class="main" id="main">
+    <div id="job" class="job" hidden role="status" aria-live="polite">
+      <div class="job-title"></div>
+      <div class="job-actions">
+        <button class="btn btn-small job-stop" hidden>Stop recording</button>
+        <button class="btn btn-small job-close" hidden>Dismiss</button>
+      </div>
+      <div class="job-msg"></div>
+      <div class="progress" aria-hidden="true"></div>
+      <details><summary>Details</summary><pre class="job-log"></pre></details>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}<div class="flash {{ category }}" role="alert">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script>window.CPRT = { job: {{ job | tojson }} };</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

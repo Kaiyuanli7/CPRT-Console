@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% macro claim_row(g) -%}
+<tr><td>{{ g }}</td>
+  <td style="width:170px"><input type="text" inputmode="decimal" name="claim_{{ g }}" aria-label="Claimed share for {{ g }}" placeholder="e.g. 60%"
+    value="{{ '%.0f'|format(S.benchmarks[g][0] * 100) ~ '%' if g in S.benchmarks else '' }}"></td>
+  <td><input type="text" name="source_{{ g }}" aria-label="Source for {{ g }}" value="{{ S.benchmarks[g][1] if g in S.benchmarks else '' }}"></td></tr>
+{%- endmacro %}
+{% block content %}
+<header class="page-head">
+  <div><h1>Settings</h1><p class="lede">Saved on this Mac in the console's data folder.</p></div>
+</header>
+
+<section class="panel" id="profile">
+  <h2>Your details</h2>
+  <form method="post" action="/settings/profile" class="inline-form">
+    <input type="hidden" name="next" value="/settings#profile">
+    <div><label for="user_name">Name</label><input id="user_name" name="user_name" type="text" value="{{ S.user_name }}" required></div>
+    <div><label for="user_email">Email</label><input id="user_email" name="user_email" type="email" value="{{ S.user_email }}" required></div>
+    <button class="btn btn-primary">Save details</button>
+  </form>
+  <p class="help">Sent to the SEC with each request, as it requires. Not used for anything else.</p>
+</section>
+
+<section class="panel" id="schedule">
+  <h2>Auto-update</h2>
+  {% if not sched.supported %}
+    <p>Automatic updates use macOS scheduling, so they're available when the console runs on a Mac.</p>
+  {% else %}
+    <p>Copart is scanned every day at the time below (two public pages). On the chosen day the full update runs instead:
+       news, macro data, filings, the Copart scan and any saved pages, then the analysis and report. You get a notification
+       after each full update, and if Copart blocks a scan. If the Mac is asleep at that time, it runs as soon as the Mac wakes.</p>
+    {% if sched.warning %}<div class="flash error">{{ sched.warning }}</div>{% endif %}
+    <p><strong>{{ 'On' if sched.installed else 'Off' }}.</strong> {% if sched.installed %}Runs {{ sched.when }}.{% endif %}</p>
+    <div class="btn-row">
+      {% if sched.installed %}
+        <form method="post" action="/settings/schedule/off" class="inline"><button class="btn">Turn off</button></form>
+      {% else %}
+        <form method="post" action="/settings/schedule/on" class="inline"><button class="btn btn-primary" {{ 'disabled' if sched.warning }}>Turn on auto-update</button></form>
+      {% endif %}
+      <form method="post" action="/settings/test-notification" class="inline"><button class="btn btn-quiet">Send a test notification</button></form>
+    </div>
+  {% endif %}
+  <form method="post" action="/settings" style="margin-top:18px">
+    <input type="hidden" name="section" value="schedule">
+    <div class="form-grid" style="max-width:560px">
+      <div><label for="weekday">Full update on</label><select id="weekday" name="weekday">{% for d in weekdays %}<option value="{{ loop.index0 }}" {{ 'selected' if loop.index0 == S.schedule_weekday }}>{{ d }}</option>{% endfor %}</select></div>
+      <div><label for="hour">Hour</label><select id="hour" name="hour">{% for h in range(24) %}<option value="{{ h }}" {{ 'selected' if h == S.schedule_hour }}>{{ '%02d'|format(h) }}</option>{% endfor %}</select></div>
+      <div><label for="minute">Minute</label><select id="minute" name="minute">{% for mm in [0, 15, 30, 45] %}<option value="{{ mm }}" {{ 'selected' if mm == S.schedule_minute }}>{{ '%02d'|format(mm) }}</option>{% endfor %}</select></div>
+    </div>
+    <label class="check"><input type="checkbox" name="scan_daily" {{ 'checked' if S.scan_daily }}> Scan Copart every day at this time (the full update still runs on the chosen day)</label>
+    <label class="check"><input type="checkbox" name="capture_in_weekly" {{ 'checked' if S.capture_in_weekly }}> Include the saved Copart and IAA pages in the weekly update</label>
+    <button class="btn">Save schedule</button>
+  </form>
+</section>
+
+<section class="panel" id="tracking">
+  <h2>What to track</h2>
+  <form method="post" action="/settings">
+    <input type="hidden" name="section" value="tracking">
+    <fieldset><legend>Insurers shown on This week and in trend charts</legend>
+      <div class="check-grid">{% for g in groups if g not in ('Unknown', 'Non-insurance') %}
+        <label class="check"><input type="checkbox" name="tracked" value="{{ g }}" {{ 'checked' if g in S.tracked_carriers }}> {{ g }}</label>{% endfor %}</div>
+    </fieldset>
+    <fieldset style="margin-top:14px"><legend>Expert-call claims to test (Copart share of that insurer's salvage)</legend>
+      <table class="data" style="max-width:760px">
+        <thead><tr><th>Insurer</th><th>Claimed Copart share</th><th>Where the claim came from</th></tr></thead>
+        <tbody>{% for g in groups if g not in ('Unknown', 'Non-insurance', 'Other insurer') and (g in S.benchmarks or g in S.tracked_carriers) %}
+          {{ claim_row(g) }}{% endfor %}
+        </tbody>
+      </table>
+      <details style="margin-top:10px"><summary>Add a claim for another insurer</summary>
+        <table class="data" style="max-width:760px"><tbody>{% for g in groups if g not in ('Unknown', 'Non-insurance', 'Other insurer') and not (g in S.benchmarks or g in S.tracked_carriers) %}
+          {{ claim_row(g) }}{% endfor %}</tbody></table>
+      </details>
+    </fieldset>
+    <div class="form-grid" style="max-width:360px;margin-top:14px">
+      <div><label for="min_sample">Smallest sample to show</label><input id="min_sample" name="min_sample" type="number" min="1" value="{{ S.min_sample }}"></div>
+    </div>
+    <p class="help">Insurers with fewer lots than this are greyed out and left out of week-over-week alerts.</p>
+    <button class="btn">Save tracking settings</button>
+  </form>
+</section>
+
+<section class="panel" id="collection">
+  <h2>Copart and IAA collection</h2>
+  <form method="post" action="/settings">
+    <input type="hidden" name="section" value="collection">
+    <label class="check"><input type="checkbox" name="show_browser" {{ 'checked' if S.show_browser }}> Show the browser window during automatic captures (closer to a normal visit, so less likely to be blocked)</label>
+    <label class="check"><input type="checkbox" name="respect_robots_txt" {{ 'checked' if S.respect_robots_txt }}> Skip pages that a site's robots.txt asks automated tools not to visit</label>
+    <div class="form-grid" style="margin-top:10px">
+      <div><label for="pause_lo">Pause between pages, from (seconds)</label><input id="pause_lo" name="pause_lo" type="number" min="0" value="{{ S.pause_between_pages[0] }}"></div>
+      <div><label for="pause_hi">to (seconds)</label><input id="pause_hi" name="pause_hi" type="number" min="0" value="{{ S.pause_between_pages[1] }}"></div>
+      <div><label for="max_pages">Most pages per run</label><input id="max_pages" name="max_pages" type="number" min="1" value="{{ S.max_pages_per_run }}"></div>
+      <div><label for="guided_max">Longest recording (minutes)</label><input id="guided_max" name="guided_max" type="number" min="5" value="{{ S.guided_max_minutes }}"></div>
+      <div><label for="min_lots">Lots needed to save a page</label><input id="min_lots" name="min_lots" type="number" min="1" value="{{ S.learn_sources_min_lots }}"></div>
+    </div>
+    <div class="btn-row"><button class="btn">Save collection settings</button></div>
+  </form>
+</section>
+
+<div class="grid-2">
+  <section class="panel" id="news">
+    <h2>News searches</h2>
+    <form method="post" action="/settings">
+      <input type="hidden" name="section" value="news">
+      <label for="queries">One search per line (Google News syntax)</label>
+      <textarea id="queries" name="queries" rows="10">{{ S.news_queries|join('\n') }}</textarea>
+      <div class="form-grid" style="max-width:260px;margin-top:10px"><div><label for="lookback">Look back (days)</label><input id="lookback" name="lookback" type="number" min="7" value="{{ S.news_lookback_days }}"></div></div>
+      <div class="btn-row"><button class="btn">Save news searches</button></div>
+    </form>
+  </section>
+  <section class="panel" id="sec">
+    <h2>SEC full-text searches</h2>
+    <form method="post" action="/settings">
+      <input type="hidden" name="section" value="sec">
+      <label for="sec_queries">One phrase per line; use quotes for exact phrases</label>
+      <textarea id="sec_queries" name="queries" rows="6">{{ S.sec_fulltext_queries|join('\n') }}</textarea>
+      <div class="form-grid" style="max-width:260px;margin-top:10px"><div><label for="start">Search filings since</label><input id="start" name="start" type="date" value="{{ S.sec_fulltext_start }}"></div></div>
+      <div class="btn-row"><button class="btn">Save SEC searches</button></div>
+    </form>
+  </section>
+</div>
+
+<section class="panel" id="advanced" style="margin-top:20px">
+  <h2>Advanced</h2>
+  <form method="post" action="/settings">
+    <input type="hidden" name="section" value="advanced">
+    <label for="field_overrides">Field overrides (only if automatic field detection picks the wrong data field)</label>
+    <textarea id="field_overrides" name="field_overrides" rows="3" placeholder='{"seller": "sellerName"}'>{{ S.field_overrides|tojson if S.field_overrides else '' }}</textarea>
+    <div class="btn-row"><button class="btn">Save overrides</button></div>
+  </form>
+  <form method="post" action="/settings/reset-listings" style="margin-top:22px" data-confirm="Delete every lot sighting and weekly snapshot? News, macro and filings are kept. This can't be undone.">
+    <p><strong>Start the tracker over.</strong> Deletes all lot sightings and weekly snapshots; keeps everything else.</p>
+    <button class="btn btn-danger">Delete listing data</button>
+  </form>
+  <p class="help">Data folder: {{ config_data_dir }}</p>
+</section>
+{% endblock %}

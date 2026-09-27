@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Reports</h1>
+    <p class="lede">A printable report is saved every week. Open one in the browser, or print it to PDF with Cmd+P.</p>
+  </div>
+  <button class="btn btn-primary" data-job="report">Build this week's report</button>
+</header>
+
+<div class="grid-2">
+  <section class="panel">
+    <h2>Weekly reports</h2>
+    {% if reports %}
+    <table class="data">
+      <thead><tr><th>Week of</th><th>Saved</th><th class="num">Size</th><th></th></tr></thead>
+      <tbody>
+      {% for r in reports %}
+        <tr><td>{{ r.week|nicedate }}</td><td>{{ r.modified }}</td><td class="num">{{ r.size_kb }} KB</td>
+          <td class="num"><a class="btn btn-small" href="/reports/{{ r.name }}" target="_blank" rel="noopener">Open</a>
+            <a class="btn btn-small btn-quiet" href="/reports/{{ r.name }}?download=1">Download</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="muted">No reports yet. The weekly update builds one automatically, or build one now.</p>
+    {% endif %}
+  </section>
+  <section class="panel">
+    <h2>Exports</h2>
+    <p>Everything in one Excel workbook for your model: insurer splits, weekly history, every lot, macro series,
+       Progressive months, DOJ wording and news.</p>
+    <div class="btn-row"><a class="btn btn-primary" href="/export/excel">Download Excel workbook</a></div>
+    <h3 style="margin-top:22px">Charts for slides</h3>
+    <ul class="prose" style="padding-left:18px;margin:0">
+      <li><a href="/charts/copart_new.png">Copart lots added in the last 7 days, by scan</a></li>
+      <li><a href="/charts/copart_listed.png">Copart lots listed, by scan</a></li>
+      <li><a href="/charts/split.png">Insurer split, latest week</a></li>
+      <li><a href="/charts/weekly.png">Copart share by week</a></li>
+      <li><a href="/charts/pressure.png">Total-loss pressure index</a></li>
+      <li><a href="/charts/insurance.png">Auto insurance price inflation</a></li>
+      <li><a href="/charts/progressive.png">Progressive policy growth</a></li>
+    </ul>
+    <p class="help">A chart link that shows "Not Found" needs more data first.</p>
+    <h3 style="margin-top:22px">Raw data</h3>
+    <p><a href="/tracker/lots.csv">Every lot sighting as CSV</a></p>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CPRT weekly alt-data report, week of {{ snap.week|nicedate }}</title>
+<style>
+  body { font-family: "Barlow", "Helvetica Neue", Arial, sans-serif; color: #1E2227; background: #F2F3F0;
+         margin: 0; line-height: 1.5; }
+  main { max-width: 860px; margin: 0 auto; padding: 40px 32px 64px; background: #fff; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 600; }
+  h2 { font-size: 19px; margin: 36px 0 10px; font-weight: 600; border-top: 2px solid #1E2227; padding-top: 10px; }
+  p, li { font-size: 15px; max-width: 72ch; }
+  .meta { color: #6B7079; font-size: 14px; margin: 0 0 24px; }
+  .note { color: #6B7079; font-size: 13px; }
+  ul.changes { list-style: none; padding: 0; margin: 0; }
+  ul.changes li { padding: 8px 0 8px 14px; border-left: 4px solid #D9DCD6; margin-bottom: 6px; }
+  ul.changes li.alert { border-color: #D99A0B; background: #FDF6E6; }
+  ul.changes li.action { border-color: #1E2227; }
+  ul.changes li.good { border-color: #3F7A55; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 600; color: #6B7079; border-bottom: 1px solid #D9DCD6; padding: 6px 8px; }
+  td { border-bottom: 1px solid #ECEDEA; padding: 6px 8px; }
+  td.num, th.num { text-align: right; }
+  img { max-width: 100%; }
+  .bar { display: flex; height: 10px; width: 160px; background: #C4412F; }
+  .bar span { background: #2350C9; display: block; }
+  @media print { body { background: #fff; } main { padding: 0; } h2 { break-after: avoid; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>CPRT weekly alt-data report</h1>
+  <p class="meta">Week of {{ snap.week|nicedate }}. Generated {{ generated }}.</p>
+
+  <h2>This week's notes</h2>
+  {% if snap.changes %}
+  <ul class="changes">
+    {% for c in snap.changes %}<li class="{{ c.level }}">{{ c.text }}</li>{% endfor %}
+  </ul>
+  {% else %}<p>No notes this week.</p>{% endif %}
+
+  <h2>Copart inventory</h2>
+  {% if cop and cop.has_data %}
+    <p>Scan of {{ cop.date|nicedate }}: {{ cop.us_listed|num }} lots listed in US yards, and {{ cop.us_new_7d|num }} added in
+       the last 7 days{% if cop.change.us_new_7d is not none %} ({{ cop.change.us_new_7d|chg }} on the 7 days to
+       {{ cop.prior_date|nicedate }}){% endif %}.</p>
+    {% if charts.copart_new %}<img alt="Copart lots added in the last 7 days, by scan" src="data:image/png;base64,{{ charts.copart_new }}">{% endif %}
+    <table>
+      <tr><th>State</th><th class="num">Listed</th><th class="num">Added, last 7 days</th><th class="num">vs a week earlier</th></tr>
+      {% for r in cop.states[:10] %}
+      <tr><td>{{ r.state }}</td><td class="num">{{ r.listed|num }}</td><td class="num">{{ r.new_7d|num }}</td>
+          <td class="num">{{ r.new_7d_change|chg }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="note">Counts from Copart's public search pages; they cover every kind of seller. "Added in the last 7 days" is
+       Copart's own filter and excludes lots that sold within the week.</p>
+  {% else %}
+    <p>No Copart scan yet.</p>
+  {% endif %}
+
+  <h2>Where each insurer's salvage is listed</h2>
+  {% if split_problem and t.has_data %}
+    <p>Paused: {{ split_problem }}</p>
+  {% elif t.has_data %}
+    <p>Week of {{ t.week|nicedate }}. States sampled on both sites: {{ t.paired_states | join(", ") or "none" }}.
+       {{ t.lots }} unique lots observed.</p>
+    {% if charts.split %}<img alt="Copart vs IAA split by insurer" src="data:image/png;base64,{{ charts.split }}">{% endif %}
+    <table>
+      <tr><th>Insurer</th><th class="num">Copart lots</th><th class="num">IAA lots</th><th class="num">Copart share</th><th class="num">95% interval</th><th>Split</th></tr>
+      {% for r in table %}
+      <tr><td>{{ r.carrier }}</td><td class="num">{{ r.copart }}</td><td class="num">{{ r.iaa }}</td>
+          <td class="num">{{ r.share | pct }}</td><td class="num">{{ r.lo | pct }} to {{ r.hi | pct }}</td>
+          <td><div class="bar"><span style="width: {{ (r.share * 100) | round(1) }}%"></span></div></td></tr>
+      {% endfor %}
+    </table>
+    {% if charts.weekly %}<h2>Copart share by week</h2><img alt="Weekly Copart share" src="data:image/png;base64,{{ charts.weekly }}">{% endif %}
+  {% else %}
+    <p>No listing data yet.</p>
+  {% endif %}
+
+  {% if charts.pressure %}
+  <h2>Total-loss pressure</h2>
+  <p>Repair prices relative to used-car prices (2019 = 100). Above 100 means repairs got relatively more
+     expensive, which pushes more damaged cars into total loss.</p>
+  <img alt="Total-loss pressure index" src="data:image/png;base64,{{ charts.pressure }}">
+  {% endif %}
+  {% if charts.insurance %}
+  <h2>Auto insurance prices</h2>
+  <img alt="Auto insurance price inflation" src="data:image/png;base64,{{ charts.insurance }}">
+  {% endif %}
+
+  {% if pgr %}
+  <h2>Progressive monthly results</h2>
+  <table>
+    <tr><th>Month</th><th class="num">Direct auto policies (000s)</th><th class="num">Growth</th>
+        <th class="num">Agency auto growth</th><th class="num">Combined ratio</th><th class="num">Prior year</th></tr>
+    {% for r in pgr %}
+    <tr><td>{{ r.period or r.filing_date }}</td><td class="num">{{ r.direct_auto_pif | num(1) }}</td>
+        <td class="num">{{ r.direct_auto_growth | num }}{% if r.direct_auto_growth is not none %}%{% endif %}</td>
+        <td class="num">{{ r.agency_auto_growth | num }}{% if r.agency_auto_growth is not none %}%{% endif %}</td>
+        <td class="num">{{ r.combined_ratio | num(1) }}</td><td class="num">{{ r.combined_ratio_prior | num(1) }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {% if news %}
+  <h2>New articles this week</h2>
+  <table>
+    <tr><th>Headline</th><th>Source</th><th class="num">Alt-data score</th></tr>
+    {% for n in news %}<tr><td><a href="{{ n.link }}">{{ n.title }}</a></td><td>{{ n.source }}</td><td class="num">{{ n.score }}</td></tr>{% endfor %}
+  </table>
+  {% endif %}
+
+  <h2>Method</h2>
+  <p class="note">Insurer split: each insurer's share of listed salvage lots on Copart vs IAA, counted only in
+  states sampled on both sites that week, with 95% Wilson intervals. It measures listed inventory, not contract
+  terms. Listings were collected from public pages by the team. Macro series: BLS consumer price indexes and FHWA
+  miles traveled via FRED. Filings: SEC EDGAR.</p>
+</main>
+</body>
+</html>

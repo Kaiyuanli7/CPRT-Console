@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Macro{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Macro</h1>
+    <p class="lede">The forces behind salvage supply, from public government data. Updated {{ last|when if last else 'never' }}.</p>
+  </div>
+  <button class="btn btn-primary" data-job="macro">Update macro data</button>
+</header>
+
+{% if not svgs %}
+  <div class="empty"><h2>No macro data yet</h2><p>Fetch it from FRED. It takes about ten seconds and needs no account.</p>
+    <div class="btn-row"><button class="btn btn-primary" data-job="macro">Fetch macro data</button></div></div>
+{% else %}
+  <section class="panel">
+    <div class="section-head"><h2>Total-loss pressure</h2><a href="/charts/pressure.png">Download chart</a></div>
+    <p>A car is totaled when repairing it costs too much relative to what it's worth. This index divides repair prices by
+       used-car prices (2019 = 100). Above 100, repairs have become relatively more expensive, so more damaged cars
+       become salvage: the structural tailwind in the long thesis.</p>
+    <figure class="chart">{{ svgs.pressure|safe }}</figure>
+    {% if latest.pressure_repair %}<p class="help">Latest: {{ latest.pressure_repair.value|num }} ({{ latest.pressure_repair.date|month }}){% if latest.pressure_repair.year_ago %}, a year earlier {{ latest.pressure_repair.year_ago|num }}{% endif %}.</p>{% endif %}
+  </section>
+  <section class="panel">
+      <div class="section-head"><h2>Repair vs used-car prices</h2><a href="/charts/spread.png">Download</a></div>
+      <p>Year-on-year change in each. When repairs inflate faster than car values, the total-loss rate rises.</p>
+      <figure class="chart">{{ svgs.spread|safe }}</figure>
+      {% if latest.repair_minus_used %}<p class="help">Latest gap: {{ (latest.repair_minus_used.value)|signed(1) }} points.</p>{% endif %}
+  </section>
+  <section class="panel">
+      <div class="section-head"><h2>Auto insurance prices</h2><a href="/charts/insurance.png">Download</a></div>
+      <p>Premium spikes pushed drivers to drop collision coverage, so fewer wrecks reach insurers. Cooling prices support
+         the argument that the drop is cyclical.</p>
+      <figure class="chart">{{ svgs.insurance|safe }}</figure>
+      {% if latest.insurance_cpi_yoy %}<p class="help">Latest: {{ (latest.insurance_cpi_yoy.value)|signed(1) }}% on a year ago; peak since 2022 {{ (latest.insurance_cpi_peak or 0)|signed(1) }}%.</p>{% endif %}
+  </section>
+  <section class="panel">
+    <div class="section-head"><h2>Miles driven</h2><a href="/charts/vmt.png">Download</a></div>
+    <p>More miles means more accidents, the raw input for salvage volume.</p>
+    <figure class="chart">{{ svgs.vmt|safe }}</figure>
+  </section>
+  <p class="help">Sources: U.S. Bureau of Labor Statistics consumer price indexes (maintenance and repair, parts and equipment,
+    used cars and trucks) and Federal Highway Administration traffic volume, via FRED. Motor vehicle insurance prices come
+    straight from the BLS, because FRED stopped carrying that index.</p>
+{% endif %}
+{% endblock %}

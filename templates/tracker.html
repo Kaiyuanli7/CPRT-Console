@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% from "_macros.html" import splitbar, legend %}
+{% block title %}Insurer tracker{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Insurer tracker</h1>
+    <p class="lede">Which insurers' salvage is listed on Copart and which on IAA, by state and by week.</p>
+  </div>
+  {% if tab == 'results' and has_data %}<a class="btn" href="/charts/split.png?week={{ week }}">Download chart for slides</a>{% endif %}
+</header>
+
+<nav class="tabs" aria-label="Tracker sections">
+  {% for key, label in [("results", "Results"), ("collect", "Collect data"), ("sources", "Saved pages"), ("quality", "Data quality"), ("lots", "All lots")] %}
+  <a href="/tracker?tab={{ key }}" class="{{ 'active' if tab == key }}" {% if tab == key %}aria-current="page"{% endif %}>{{ label }}{% if key == 'sources' %} <span class="count">{{ sources|length }}</span>{% endif %}</a>
+  {% endfor %}
+</nav>
+
+{# ------------------------------------------------------------ results #}
+{% if tab == 'results' %}
+  {% if not has_data %}
+    <div class="empty">
+      <h2>No listing data yet</h2>
+      <p>Collect data first: record one browsing session on Copart and one on IAA.</p>
+      <div class="btn-row"><a class="btn btn-primary" href="/tracker?tab=collect">Collect data</a></div>
+    </div>
+  {% else %}
+    <form class="toolbar" method="get">
+      <input type="hidden" name="tab" value="results">
+      <label for="week">Week of</label>
+      <select id="week" name="week" data-autosubmit>
+        {% for w in weeks %}<option value="{{ w }}" {{ 'selected' if w == week }}>{{ w|nicedate }}</option>{% endfor %}
+      </select>
+      <span class="muted">{{ m.lots|num }} unique lots. Both sites sampled in: {{ m.paired_states|join(", ") or "no state yet" }}.</span>
+    </form>
+
+    {% if split_problem %}
+      <div class="flash error">Insurer split paused: {{ split_problem }} The tables below are kept for reference;
+        <a href="/inventory">Copart inventory</a> tracks volumes instead.</div>
+    {% elif not m.paired_states %}
+      <div class="flash error">No state was sampled on both sites this week, so shares can't be compared yet.
+        Record the same states on Copart and IAA.</div>
+    {% endif %}
+
+    <section class="panel">
+      <h2>Split by insurer</h2>
+      <div class="table-scroll">
+      <table class="data sortable">
+        <thead><tr>
+          <th>Insurer</th><th class="bar-col">Copart vs IAA</th><th class="num">Copart share</th><th class="num">95% interval</th>
+          <th class="num">Copart lots</th><th class="num">IAA lots</th>
+          <th class="num">vs {{ prev_week|nicedate if prev_week else 'prior week' }}</th><th class="num">Expert claim</th>
+        </tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr class="{{ 'is-small' if r.small }}">
+            <td>{{ r.name }}</td>
+            <td data-sort="{{ r.share }}">{{ splitbar(r, claim=r.claim) }}</td>
+            <td class="num" data-sort="{{ r.share }}">{{ r.share|pct }}</td>
+            <td class="num" data-sort="{{ r.lo }}">{{ r.lo|pct }} to {{ r.hi|pct }}</td>
+            <td class="num">{{ r.copart }}</td>
+            <td class="num">{{ r.iaa }}</td>
+            <td class="num" data-sort="{{ r.delta if r.delta is not none else '' }}">{% if r.delta is not none %}<span class="delta{{ ' sig' if r.sig }}">{{ r.delta|pts }}</span>{% else %}&ndash;{% endif %}</td>
+            <td class="num">{{ r.claim|pct if r.claim is not none else '' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {{ legend() }}
+      <p class="help">Counts only states sampled on both sites. Grey rows have fewer than {{ S.min_sample }} lots; bold changes are statistically significant.</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-head"><h2>Week by week</h2>{% if weekly_svg %}<a href="/charts/weekly.png">Download chart</a>{% endif %}</div>
+      {% if weekly_svg %}
+        <figure class="chart">{{ weekly_svg|safe }}<figcaption>Copart share of each tracked insurer's listed lots. Dashed line: an even split.</figcaption></figure>
+      {% else %}
+        <p class="muted">The trend chart appears once two weeks have data from both sites in the same states.</p>
+      {% endif %}
+    </section>
+
+    <div class="grid-2">
+      <section class="panel">
+        <h2>Coverage this week</h2>
+        <table class="data">
+          <thead><tr><th>State</th><th class="num">Copart lots</th><th class="num">IAA lots</th><th>In the split</th></tr></thead>
+          <tbody>
+          {% for st, c in m.coverage|dictsort %}
+            <tr><td>{{ st or 'No state' }}</td><td class="num">{{ c.copart }}</td><td class="num">{{ c.iaa }}</td>
+              <td>{% if c.copart and c.iaa %}<span class="badge ok">Yes</span>{% else %}<span class="badge warn">Needs {{ 'IAA' if c.copart else 'Copart' }}</span>{% endif %}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <h2>By state</h2>
+        <input type="search" placeholder="Filter by state or insurer" data-filter="#state-table" aria-label="Filter the state table">
+        <div class="table-scroll" style="max-height: 420px; margin-top: 10px;">
+        <table class="data sortable" id="state-table">
+          <thead><tr><th>State</th><th>Insurer</th><th class="num">Copart</th><th class="num">IAA</th><th class="num">Share</th></tr></thead>
+          <tbody>{% for r in states %}<tr><td>{{ r.state }}</td><td>{{ r.carrier }}</td><td class="num">{{ r.copart }}</td><td class="num">{{ r.iaa }}</td><td class="num" data-sort="{{ r.share }}">{{ r.share|pct }}</td></tr>{% endfor %}</tbody>
+        </table>
+        </div>
+      </section>
+    </div>
+  {% endif %}
+
+{# ------------------------------------------------------------ collect #}
+{% elif tab == 'collect' %}
+  <section class="panel">
+    <h2>Record a browsing session</h2>
+    <p>A browser window opens on the site. Search one state at a time and open two or three pages of results for each,
+       then close the window. Every lot you see is saved, and each results page is added to the weekly automatic capture.</p>
+    <p class="help">Record the same states on both sites (TX, FL, CA, GA and PA are the biggest). Browse as a guest; don't log in.
+       The recording stops by itself after {{ S.guided_max_minutes }} minutes.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" data-job="capture_guided" data-platform="copart">Record on Copart</button>
+      <button class="btn btn-primary" data-job="capture_guided" data-platform="iaa">Record on IAA</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Capture saved pages now</h2>
+    <p>{{ source_counts.copart }} Copart and {{ source_counts.iaa }} IAA pages are saved. The weekly update captures them automatically;
+       use this to refresh in between.</p>
+    <button class="btn" data-job="capture_auto" {{ 'disabled' if not (source_counts.copart or source_counts.iaa) }}>Capture saved pages</button>
+  </section>
+
+  <section class="panel" id="hand">
+    <h2>Add a lot by hand</h2>
+    <p>Use this for anything the recorder can't reach. Paste a listing page's text to fill the form, check it, then save.</p>
+    <form method="post" action="/tracker/paste" class="stack">
+      <input type="hidden" name="platform" value="{{ prefill.platform }}">
+      <div>
+        <label for="paste-text">Listing text</label>
+        <textarea id="paste-text" name="text" rows="3" placeholder="On the listing page press Cmd+A, then Cmd+C, and paste here"></textarea>
+      </div>
+      <button class="btn">Fill the form from this text</button>
+    </form>
+    <hr style="border:0;border-top:1px solid var(--rule-soft);margin:20px 0">
+    <form method="post" action="/tracker/manual">
+      <div class="form-grid">
+        <div><label for="platform">Site</label>
+          <select id="platform" name="platform" required>
+            <option value="">Choose</option>
+            {% for k, v in platforms.items() %}<option value="{{ k }}" {{ 'selected' if prefill.platform == k }}>{{ v }}</option>{% endfor %}
+          </select></div>
+        <div><label for="obs_date">Date seen</label><input id="obs_date" name="obs_date" type="date"></div>
+        <div><label for="lot_id">Lot or stock number</label><input id="lot_id" name="lot_id" type="text" value="{{ prefill.lot_id }}" required></div>
+        <div><label for="state">State</label>
+          <select id="state" name="state"><option value="">From the yard name</option>
+            {% for st in states_list %}<option {{ 'selected' if prefill.state == st }}>{{ st }}</option>{% endfor %}
+          </select></div>
+        <div class="wide"><label for="seller_raw">Seller, exactly as shown</label><input id="seller_raw" name="seller_raw" type="text" value="{{ prefill.seller_raw }}"></div>
+        <div class="wide"><label for="yard">Yard or branch</label><input id="yard" name="yard" type="text" value="{{ prefill.yard }}"></div>
+        <div><label for="year">Year</label><input id="year" name="year" type="text" inputmode="numeric" value="{{ prefill.year }}"></div>
+        <div><label for="make">Make</label><input id="make" name="make" type="text" value="{{ prefill.make }}"></div>
+        <div><label for="model">Model</label><input id="model" name="model" type="text" value="{{ prefill.model }}"></div>
+        <div><label for="damage">Damage</label><input id="damage" name="damage" type="text" value="{{ prefill.damage }}"></div>
+      </div>
+      {% if carrier_guess %}<p class="help">This seller will count as <strong>{{ carrier_guess }}</strong>.</p>{% endif %}
+      <div class="btn-row"><button class="btn btn-primary">Save lot</button></div>
+    </form>
+    {% if recent_manual %}
+      <h3 style="margin-top:22px">Recently added by hand</h3>
+      <table class="data">
+        <thead><tr><th>Date</th><th>Site</th><th>Lot</th><th>State</th><th>Seller</th></tr></thead>
+        <tbody>{% for r in recent_manual %}<tr><td>{{ r.obs_date|nicedate }}</td><td>{{ platforms[r.platform] }}</td><td>{{ r.lot_id }}</td><td>{{ r.state }}</td><td>{{ r.seller_raw }}</td></tr>{% endfor %}</tbody>
+      </table>
+    {% endif %}
+  </section>
+
+{# ------------------------------------------------------------ saved pages #}
+{% elif tab == 'sources' %}
+  <section class="panel">
+    <h2>Pages captured every week</h2>
+    {% if sources %}
+    <div class="table-scroll">
+    <table class="data sortable">
+      <thead><tr><th>Site</th><th>State</th><th>Page</th><th>Last capture</th><th>Status</th><th class="num">Lots</th><th class="num">Weekly</th><th></th></tr></thead>
+      <tbody>
+      {% for src in sources %}
+        <tr class="{{ '' if src.enabled else 'is-off' }}">
+          <td><span class="badge {{ src.platform }}">{{ platforms[src.platform] }}</span></td>
+          <td>{{ src.label or '&ndash;'|safe }}</td>
+          <td class="wrap"><a href="{{ src.url }}" target="_blank" rel="noopener">{{ src.url|truncate(70, true) }}</a></td>
+          <td>{{ src.last_run|when if src.last_run else 'never' }}</td>
+          <td>{% if src.last_status == 'ok' %}<span class="badge ok">OK</span>{% elif src.last_status %}<span class="badge warn">{{ src.last_status }}</span>{% endif %}</td>
+          <td class="num">{{ src.last_lots or 0 }}</td>
+          <td class="num"><form method="post" action="/tracker/sources/{{ src.id }}/toggle" class="inline"><button class="btn btn-small">{{ 'On' if src.enabled else 'Off' }}</button></form></td>
+          <td class="num"><form method="post" action="/tracker/sources/{{ src.id }}/delete" class="inline" data-confirm="Remove this page from the weekly capture?"><button class="btn btn-small btn-quiet">Remove</button></form></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="help">Pages are added automatically when a recorded session finds at least {{ S.learn_sources_min_lots }} lots on them. Turn a page off to skip it without deleting it.</p>
+    {% else %}
+      <div class="empty"><h2>No saved pages yet</h2><p>Record a browsing session and the results pages you open appear here.</p>
+        <div class="btn-row"><a class="btn btn-primary" href="/tracker?tab=collect">Collect data</a></div></div>
+    {% endif %}
+  </section>
+  <section class="panel">
+    <h2>Add a page yourself</h2>
+    <form method="post" action="/tracker/sources/add" class="inline-form">
+      <div style="flex:1 1 380px"><label for="url">Search results address</label><input id="url" name="url" type="url" placeholder="https://www.copart.com/..." required></div>
+      <div style="min-width:120px"><label for="label">State</label><input id="label" name="label" type="text" maxlength="5" placeholder="TX"></div>
+      <button class="btn">Add page</button>
+    </form>
+    <p class="help">Usually unnecessary: recorded sessions add pages for you.</p>
+  </section>
+
+{# ------------------------------------------------------------ data quality #}
+{% elif tab == 'quality' %}
+  <div class="grid-2">
+    <section class="panel">
+      <h2>Seller names found</h2>
+      {% if m %}
+        <dl class="kv">
+          {% for p, cov in m.seller_coverage|dictsort %}<dt>{{ platforms[p] }}</dt><dd>{{ cov|pct }} of lots ({{ m.lots_by_platform[p] }} lots, week of {{ m.week|nicedate }})</dd>{% endfor %}
+        </dl>
+        <p class="help">Lots without a seller can't be credited to an insurer. Below half means the site isn't showing sellers on
+          those pages; open individual listings in your next recorded session, or add a few by hand.</p>
+      {% else %}<p class="muted">No listing data yet.</p>{% endif %}
+    </section>
+    <section class="panel">
+      <h2>Your insurer assignments</h2>
+      {% if overrides %}
+        <table class="data"><tbody>
+        {% for seller, grp in overrides|dictsort %}
+          <tr><td class="wrap">{{ seller }}</td><td>{{ grp }}</td>
+            <td class="num"><form method="post" action="/tracker/mapping" class="inline"><input type="hidden" name="seller_raw" value="{{ seller }}"><input type="hidden" name="remove" value="1"><button class="btn btn-small btn-quiet">Undo</button></form></td></tr>
+        {% endfor %}
+        </tbody></table>
+      {% else %}<p class="muted">None yet. Sellers are matched to insurers automatically; fix any misses below.</p>{% endif %}
+    </section>
+  </div>
+  <section class="panel" style="margin-top:20px">
+    <h2>Sellers that didn't match an insurer</h2>
+    {% if unmapped %}
+    <table class="data">
+      <thead><tr><th>Seller as listed</th><th class="num">Lots</th><th>Currently</th><th>Count it as</th></tr></thead>
+      <tbody>
+      {% for u in unmapped %}
+        <tr><td class="wrap">{{ u.seller_raw }}</td><td class="num">{{ u.lots }}</td><td>{{ u.carrier }}</td>
+          <td><form method="post" action="/tracker/mapping" class="inline-form" style="gap:8px">
+            <input type="hidden" name="seller_raw" value="{{ u.seller_raw }}">
+            <select name="group" aria-label="Insurer for {{ u.seller_raw }}" style="width:auto">{% for g in groups %}<option {{ 'selected' if g == u.carrier }}>{{ g }}</option>{% endfor %}</select>
+            <button class="btn btn-small">Save</button></form></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Every seller name matched an insurer or a non-insurance seller.</p>{% endif %}
+  </section>
+
+{# ------------------------------------------------------------ all lots #}
+{% elif tab == 'lots' %}
+  <form class="toolbar" method="get">
+    <input type="hidden" name="tab" value="lots">
+    <select name="platform" aria-label="Site" data-autosubmit><option value="">Both sites</option>{% for k, v in platforms.items() %}<option value="{{ k }}" {{ 'selected' if filters.platform == k }}>{{ v }}</option>{% endfor %}</select>
+    <select name="state" aria-label="State" data-autosubmit><option value="">All states</option>{% for st in states_all %}<option {{ 'selected' if filters.state == st }}>{{ st }}</option>{% endfor %}</select>
+    <select name="carrier" aria-label="Insurer" data-autosubmit><option value="">All sellers</option>{% for c in carriers_all %}<option {{ 'selected' if filters.carrier == c }}>{{ c }}</option>{% endfor %}</select>
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="Lot, seller, yard, vehicle" aria-label="Search lots" style="width:240px">
+    <button class="btn btn-small">Search</button>
+    <a class="btn btn-small btn-quiet" href="/tracker/lots.csv">Download all as CSV</a>
+  </form>
+  <section class="panel">
+    <p class="muted">{{ total|num }} sightings match{% if total > 500 %}; showing the latest 500{% endif %}.</p>
+    <div class="table-scroll">
+    <table class="data sortable">
+      <thead><tr><th>Date</th><th>Site</th><th>Lot</th><th>State</th><th>Yard</th><th>Seller</th><th>Counted as</th><th>Vehicle</th><th>Damage</th><th>How</th></tr></thead>
+      <tbody>
+      {% for r in lots %}
+        <tr><td>{{ r.obs_date }}</td><td>{{ platforms[r.platform] }}</td><td>{{ r.lot_id }}</td><td>{{ r.state }}</td>
+          <td class="wrap">{{ r.yard }}</td><td class="wrap">{{ r.seller_raw }}</td><td>{{ r.carrier }}</td>
+          <td>{{ r.year }} {{ r.make }} {{ r.model }}</td><td>{{ r.damage }}</td><td>{{ r.origin }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

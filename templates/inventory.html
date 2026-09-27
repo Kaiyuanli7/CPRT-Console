@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Copart inventory{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Copart inventory</h1>
+    <p class="lede">Lots listed at Copart's yards and lots added in the last 7 days, read from Copart's public search pages.
+      Scanned {{ last|when if last else 'never' }}.</p>
+  </div>
+  <button class="btn btn-primary" data-job="scan">Scan Copart now</button>
+</header>
+
+{% if run and run.status == 'failed' %}
+  <div class="flash error">The last scan didn't finish: {{ run.message }} Use <a href="#with-me">Scan with me</a> to fill the gap.
+    The automatic scan tries again at the next scheduled time.</div>
+{% endif %}
+
+{% if not cop.has_data %}
+  <div class="empty">
+    <h2>No scan yet</h2>
+    <p>The scan loads two public Copart search pages and reads the counts Copart shows for every yard: lots listed and lots
+       added in the last 7 days. It takes about a minute. Once auto-update is on in Settings, it runs every day.</p>
+    <div class="btn-row"><button class="btn" data-job="scan">Scan Copart now</button></div>
+  </div>
+{% else %}
+  <section class="panel">
+    <dl class="signals">
+      <div>
+        <dt>Listed in US yards</dt>
+        <dd>{{ cop.us_listed|num }}</dd>
+        <p>{% if cop.change.us_listed is not none %}{{ cop.change.us_listed|chg }} on {{ cop.prior_date|nicedate }}{% else %}Weekly change appears after 7 days of scans{% endif %}</p>
+      </div>
+      <div>
+        <dt>Added in the last 7 days</dt>
+        <dd>{{ cop.us_new_7d|num }}</dd>
+        <p>{% if cop.change.us_new_7d is not none %}{{ cop.change.us_new_7d|chg }} on the 7 days to {{ cop.prior_date|nicedate }}{% else %}The closest proxy for new assignments{% endif %}</p>
+      </div>
+      <div>
+        <dt>Added yesterday</dt>
+        <dd>{{ cop.new_24h|num }}</dd>
+        <p>All Copart yards, including outside the US</p>
+      </div>
+      <div>
+        <dt>US locations counted</dt>
+        <dd>{{ cop.us_yards }}</dd>
+        <p>Yards and offsite lots. Scan of {{ cop.date|nicedate }}; {{ cop.scans }} scan{{ 's' if cop.scans != 1 }} so far</p>
+      </div>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <div class="section-head"><h2>Added in the last 7 days</h2>{% if svgs.copart_new %}<a href="/charts/copart_new.png">Download chart</a>{% endif %}</div>
+    {% if svgs.copart_new %}
+      <figure class="chart">{{ svgs.copart_new|safe }}<figcaption>US yards, one point per scan. Each point covers the 7 days before it.</figcaption></figure>
+    {% else %}
+      <p class="muted">The trend appears after the second scan. With the daily scan on, that's tomorrow.</p>
+    {% endif %}
+  </section>
+
+  {% if svgs.copart_listed %}
+  <section class="panel">
+    <div class="section-head"><h2>Listed in US yards</h2><a href="/charts/copart_listed.png">Download chart</a></div>
+    <figure class="chart">{{ svgs.copart_listed|safe }}</figure>
+  </section>
+  {% endif %}
+
+  <section class="panel">
+    <div class="section-head"><h2>By state</h2><a href="/export/excel">Download everything (Excel)</a></div>
+    <input type="search" placeholder="Filter states" data-filter="#inv-states" aria-label="Filter states" style="max-width:260px">
+    <div class="table-scroll" style="margin-top:10px">
+    <table class="data sortable" id="inv-states">
+      <thead><tr><th>State</th><th class="num">Listed</th><th class="num">Added in the last 7 days</th>
+        <th class="num">Added as a share of listed</th><th class="num">Added vs a week earlier</th></tr></thead>
+      <tbody>
+      {% for r in cop.states %}
+        <tr><td>{{ r.state }}</td><td class="num">{{ r.listed|num }}</td><td class="num">{{ r.new_7d|num }}</td>
+          <td class="num" data-sort="{{ r.new_share if r.new_share is not none else '' }}">{{ r.new_share|pct(1) }}</td>
+          <td class="num" data-sort="{{ r.new_7d_change if r.new_7d_change is not none else '' }}">{{ r.new_7d_change|chg }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+{% endif %}
+
+<section class="panel" id="with-me">
+  <h2>If the automatic scan is blocked</h2>
+  <p>Copart sometimes shows automated browsers a bot check. The console then stops for the day instead of trying to get
+     around it. To fill the gap, scan with it: a Copart window opens on all lots. In the filters on the left, open
+     <strong>Newly added lots</strong> and choose <strong>Last 7 days</strong>. When the results update, close the window.
+     The console saves the same counts the automatic scan would.</p>
+  <button class="btn" data-job="scan_guided">Scan with me</button>
+</section>
+
+<p class="help">What the numbers are: counts Copart shows next to its search results, covering every kind of seller (insurers,
+  dealers, rental fleets, charities), because Copart hides sellers from logged-out visitors. "Added in the last 7 days" is
+  Copart's own filter: lots assigned to a sale in the last 7 days that are still listed, so lots that sold within the week
+  aren't in it. Compare it week to week rather than reading it as total arrivals. Yards outside the US are left out of the
+  state figures. Every scan's raw response is kept in the data folder.</p>
+{% endblock %}
